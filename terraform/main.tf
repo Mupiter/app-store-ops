@@ -34,16 +34,6 @@ resource "aws_s3_bucket_versioning" "review_state" {
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "review_state" {
-  bucket = aws_s3_bucket.review_state.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
 resource "aws_s3_bucket_lifecycle_configuration" "review_state" {
   bucket = aws_s3_bucket.review_state.id
 
@@ -62,9 +52,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "review_state" {
 resource "aws_iam_openid_connect_provider" "github" {
   count = var.github_oidc_provider_arn == null ? 1 : 0
 
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = []
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
 }
 
 locals {
