@@ -88,7 +88,4 @@ jobs:
 
       - name: Clean up App Store Connect key
         if: always()
-        run: |
-          if [ -n "${KEY_PATH:-}" ]; then
-            rm -f "$KEY_PATH"
-          fi
+        run: rm -f "${KEY_PATH:-}"
