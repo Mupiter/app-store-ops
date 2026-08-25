@@ -1,6 +1,6 @@
 # App Store Reviews → Slack
 
-Get new App Store customer reviews in Slack without handing your App Store data to another SaaS. This MIT-licensed template is a small, dependency-free Python integration, a scheduled GitHub Actions workflow, and least-privilege Terraform for its AWS state.
+Copy-ready building blocks for getting new App Store customer reviews into Slack—without handing your App Store data to another SaaS. This MIT-licensed reference implementation contains a dependency-free Python integration, a GitHub Actions workflow template, and least-privilege Terraform for its AWS state.
 
 It is designed for developers who want to own and extend their App Store automation rather than rent another dashboard.
 
@@ -12,6 +12,8 @@ flowchart LR
   GH -->|"short-lived OIDC credentials"| AWS["AWS IAM"]
 ```
 
+This repository does not run App Store operations for itself. Its only active workflow, [.github/workflows/test.yml](.github/workflows/test.yml), runs the unit tests. The customer-facing workflow lives in [github-workflows/app-store-reviews.yml](github-workflows/app-store-reviews.yml) and becomes active only after you copy it into a repository that you control.
+
 ## What it does
 
 - Looks up an app by bundle ID and polls App Store Connect for customer reviews.
@@ -22,13 +24,38 @@ flowchart LR
 
 The Python implementation uses only the standard library plus the `openssl` executable preinstalled on GitHub-hosted Ubuntu runners.
 
-## Quick start
+## Integrate it into existing repositories
 
-Fork this repository or copy it into a dedicated private automation repository. The workflow does not need your iOS app source code; it only needs its App Store Connect and Slack configuration.
+Use the pieces in this repository where they fit your existing setup. The common arrangement is:
 
-### 1. Provision the AWS state and IAM role
+| Your repository | Copy from this repository |
+| --- | --- |
+| Application repository | `github-workflows/app-store-reviews.yml` → `.github/workflows/app-store-reviews.yml`, plus the two Python files under `scripts/` |
+| Infrastructure repository | The standalone `terraform/` configuration, or its resources folded into your existing Terraform structure |
 
-Terraform creates a private, versioned S3 bucket and an IAM role whose only data access is the review watermark at `app-store-reviews/state.json`.
+The workflow expects the copied Python files at these paths in the application repository:
+
+```text
+scripts/app_store_connect.py
+scripts/app_store_reviews_to_slack.py
+```
+
+For example, from a local clone of this repository:
+
+```sh
+app_repo=/path/to/your-app
+mkdir -p "$app_repo/.github/workflows" "$app_repo/scripts"
+cp github-workflows/app-store-reviews.yml "$app_repo/.github/workflows/"
+cp scripts/app_store_connect.py scripts/app_store_reviews_to_slack.py "$app_repo/scripts/"
+```
+
+The copied workflow runs daily at 08:00 America/Chicago. Adjust its schedule before committing it to your application repository if you prefer a different cadence.
+
+## Provision the AWS state and IAM role
+
+The included Terraform configuration is intentionally separate from the application files. Run it as a standalone root in your infrastructure repository, or integrate the resources with your existing Terraform configuration.
+
+It creates a private, versioned S3 bucket and an IAM role whose only data access is the review watermark at `app-store-reviews/state.json`.
 
 ```sh
 cd terraform
@@ -38,7 +65,7 @@ terraform init
 terraform apply
 ```
 
-Use the three Terraform outputs to create these **GitHub Actions repository variables**:
+Use the three Terraform outputs to create these **GitHub Actions repository variables in the application repository**:
 
 | Variable | Terraform output |
 | --- | --- |
@@ -46,19 +73,21 @@ Use the three Terraform outputs to create these **GitHub Actions repository vari
 | `AWS_S3_BUCKET` | `state_bucket_name` |
 | `AWS_ROLE_ARN` | `github_actions_role_arn` |
 
-`github_oidc_subject` is intentionally an exact string, not a wildcard: it limits the role to the repository and branch you approve. GitHub introduced immutable OIDC subjects for new repositories on July 15, 2026, so use the format that applies to your repository in `terraform.tfvars.example`. See GitHub’s [OIDC reference](https://docs.github.com/en/actions/reference/security/oidc) for the two formats.
+`github_oidc_subject` is intentionally an exact string, not a wildcard: it limits the role to the application repository and branch you approve. GitHub introduced immutable OIDC subjects for new repositories on July 15, 2026, so use the format that applies to your repository in `terraform.tfvars.example`. See GitHub’s [OIDC reference](https://docs.github.com/en/actions/reference/security/oidc) for the two formats.
 
 If your AWS account already has the GitHub Actions OIDC provider, set `github_oidc_provider_arn` in `terraform.tfvars`; otherwise Terraform creates it. GitHub’s [AWS OIDC guide](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws) explains the trust relationship.
 
-### 2. Create an App Store Connect API key
+## Configure the application repository
+
+### 1. Create an App Store Connect API key
 
 Request and create an App Store Connect API key with a role that can read the target app’s customer reviews. For a team key, App Store Connect uses **Users and Access → Integrations → App Store Connect API → Team Keys**. Download the `.p8` private key immediately—Apple makes it available only once—and never commit it. Apple documents the current process in [Creating API Keys for App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi/creating-api-keys-for-app-store-connect-api).
 
 The integration reads reviews with Apple’s [Customer Reviews API](https://developer.apple.com/documentation/appstoreconnectapi/customer-reviews). Choose the narrowest App Store Connect role that has access to the app and reviews in your account.
 
-### 3. Add GitHub Actions secrets and variables
+### 2. Add GitHub Actions secrets and variables
 
-In the repository’s **Settings → Secrets and variables → Actions**, add:
+In the application repository’s **Settings → Secrets and variables → Actions**, add:
 
 | Type | Name | Value |
 | --- | --- | --- |
@@ -71,9 +100,9 @@ In the repository’s **Settings → Secrets and variables → Actions**, add:
 | Variable | `AWS_S3_BUCKET` | Terraform `state_bucket_name` output |
 | Variable | `AWS_ROLE_ARN` | Terraform `github_actions_role_arn` output |
 
-### 4. Run it once
+### 3. Run the copied workflow once
 
-Open **Actions → App Store Reviews → Run workflow** on the branch named in `github_oidc_subject`. The first successful run saves the current review as its watermark and sends no Slack notifications. After that, the workflow runs daily at 08:00 America/Chicago and posts only new reviews. Change the schedule in [.github/workflows/app-store-reviews.yml](.github/workflows/app-store-reviews.yml) if you prefer a different cadence.
+Open **Actions → App Store Reviews → Run workflow** in the application repository, on the branch named in `github_oidc_subject`. The first successful run saves the current review as its watermark and sends no Slack notifications. Later scheduled runs post only new reviews.
 
 ## Local development
 
