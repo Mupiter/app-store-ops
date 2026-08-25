@@ -121,6 +121,7 @@ python3 scripts/app_store_reviews_to_slack.py \
 - GitHub assumes a short-lived IAM role via OIDC. The generated policy can only list the state bucket and read/write one state object.
 - The S3 bucket blocks public access, enables versioning, and expires noncurrent state versions after 30 days.
 - If Slack rejects a message or App Store Connect fails, the state is not advanced. A later successful run retries the missed review rather than silently losing it.
+- Notifications are delivered at least once. If Slack accepts an alert but the run fails before its updated state reaches S3, a later run can resend that review; every alert includes its App Store review ID for easy identification.
 
 ## License
 
