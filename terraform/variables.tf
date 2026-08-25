@@ -9,9 +9,8 @@ variable "state_bucket_name" {
 }
 
 variable "github_actions_role_name" {
-  description = "Name of the least-privilege IAM role GitHub Actions assumes."
+  description = "Unique name of the least-privilege IAM role GitHub Actions assumes."
   type        = string
-  default     = "app-store-reviews-github-actions"
 }
 
 variable "github_oidc_subject" {
