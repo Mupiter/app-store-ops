@@ -4,13 +4,7 @@ Copy-ready building blocks for getting new App Store customer reviews into Slack
 
 It is designed for developers who want to own and extend their App Store automation rather than rent another dashboard.
 
-```mermaid
-flowchart LR
-  ASC["App Store Connect"] -->|"customer reviews API"| GH["GitHub Actions"]
-  GH -->|"new review"| Slack["Slack incoming webhook"]
-  GH <-->|"watermark only"| S3["Private S3 bucket"]
-  GH -->|"short-lived OIDC credentials"| AWS["AWS IAM"]
-```
+![App Store reviews flow: App Store Connect sends customer reviews to GitHub Actions, which posts Slack alerts and uses a private S3 bucket in your AWS account to store review state.](docs/app-store-review-flow.svg)
 
 This repository does not run App Store operations for itself. Its only active workflow, [.github/workflows/test.yml](.github/workflows/test.yml), runs the unit tests. The customer-facing workflow lives in [github-workflows/app-store-reviews.yml](github-workflows/app-store-reviews.yml) and becomes active only after you copy it into a repository that you control.
 

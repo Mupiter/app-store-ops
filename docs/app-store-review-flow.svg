@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title description">
+  <title id="title">App Store reviews to Slack architecture</title>
+  <desc id="description">App Store Connect sends customer reviews to a GitHub Actions workflow. The workflow posts alerts to Slack and stores its review state in a private S3 bucket in the user's AWS account through OpenID Connect.</desc>
+  <style>
+    .title { font: 600 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #f0f6fc; }
+    .sub { font: 400 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #a9b7c6; }
+    .card { fill: #161b22; stroke: #30363d; stroke-width: 1.5; }
+    .action-card { fill: #0c2745; stroke: #58a6ff; stroke-width: 1.5; }
+    .label { font: 600 19px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #f0f6fc; }
+    .detail { font: 400 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #a9b7c6; }
+    .note { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0.8px; fill: #79c0ff; }
+  </style>
+  <defs>
+    <linearGradient id="connect-blue" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#4cc7ff"/>
+      <stop offset="1" stop-color="#007aff"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#58a6ff"/>
+    </marker>
+    <g id="github" fill="currentColor">
+      <path d="M12 .7A11.3 11.3 0 0 0 8.4 22.7c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.3 11.3 0 0 0 12 .7Z"/>
+    </g>
+    <g id="slack">
+      <path fill="#E01E5A" d="M2.471 11.318a1.474 1.474 0 0 1 0-2.942h1.47v1.47a1.474 1.474 0 0 1-1.47 1.472zm3.682-2.942a1.474 1.474 0 0 1 1.47 1.471v3.683a1.47 1.47 0 0 1-2.94 0V9.846a1.474 1.474 0 0 1 1.47-1.47z"/>
+      <path fill="#36C5F0" d="M4.683 2.471a1.47 1.47 0 1 1 2.94 0v1.47h-1.47a1.474 1.474 0 0 1-1.47-1.47zm2.94 3.682a1.474 1.474 0 0 1-1.47 1.47H2.47a1.47 1.47 0 0 1 0-2.94h3.684a1.474 1.474 0 0 1 1.47 1.47z"/>
+      <path fill="#2EB67D" d="M9.847 7.624a1.474 1.474 0 0 1-1.47-1.47V2.47a1.47 1.47 0 1 1 2.94 0v3.684a1.474 1.474 0 0 1-1.47 1.47zm3.682-2.941a1.47 1.47 0 0 1 0 2.94h-1.47v-1.47a1.474 1.474 0 0 1 1.47-1.47z"/>
+      <path fill="#ECB22E" d="M8.377 9.847a1.474 1.474 0 0 1 1.47-1.47h3.683a1.47 1.47 0 1 1 0 2.94H9.847a1.474 1.474 0 0 1-1.47-1.47zm2.94 3.682a1.47 1.47 0 0 1-2.94 0v-1.47h1.47a1.474 1.474 0 0 1 1.47 1.47z"/>
+    </g>
+    <g id="aws-logo">
+      <text x="0" y="16" font-family="Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="-1" fill="#f0f6fc">aws</text>
+      <path d="M1 22Q14 30 30 21" fill="none" stroke="#ff9900" stroke-width="3" stroke-linecap="round"/>
+      <path d="M26 20L31 21L28 25" fill="#ff9900"/>
+    </g>
+  </defs>
+
+  <rect width="1200" height="560" rx="28" fill="#0d1117"/>
+  <text x="60" y="70" class="title">A review arrives. Your automation does the rest.</text>
+  <text x="60" y="101" class="sub">A small review-to-Slack pipeline that lives in accounts and repositories you control.</text>
+
+  <g transform="translate(350 183)">
+    <rect width="104" height="28" rx="14" fill="#0d2d52"/>
+    <text x="52" y="19" text-anchor="middle" class="note">REVIEW DATA</text>
+  </g>
+  <g transform="translate(752 183)">
+    <rect width="102" height="28" rx="14" fill="#0d2d52"/>
+    <text x="51" y="19" text-anchor="middle" class="note">SLACK ALERT</text>
+  </g>
+  <path d="M335 311H456" stroke="#58a6ff" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M744 311H863" stroke="#58a6ff" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g transform="translate(50 230)">
+    <rect width="285" height="162" rx="20" class="card"/>
+    <rect x="28" y="27" width="54" height="54" rx="14" fill="#f7fbff"/>
+    <g transform="translate(39 36)" fill="none" stroke="url(#connect-blue)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 32L14 2L28 32"/>
+      <path d="M6 21H23"/>
+    </g>
+    <text x="101" y="56" class="label">App Store Connect</text>
+    <text x="101" y="80" class="detail">Customer Reviews API</text>
+    <path d="M28 104H257" stroke="#30363d"/>
+    <text x="28" y="132" class="detail">New ratings and written feedback</text>
+  </g>
+
+  <g transform="translate(458 230)">
+    <rect width="286" height="162" rx="20" class="action-card"/>
+    <circle cx="55" cy="54" r="27" fill="#f0f6fc"/>
+    <g transform="translate(43 42) scale(1.04)" fill="#0d1117"><use href="#github"/></g>
+    <text x="102" y="56" class="label">GitHub Actions</text>
+    <text x="102" y="80" class="detail">Scheduled review poller</text>
+    <path d="M28 104H258" stroke="#1f6feb" opacity=".55"/>
+    <text x="28" y="132" class="detail">Your code, your schedule, your repo</text>
+  </g>
+
+  <g transform="translate(864 230)">
+    <rect width="286" height="162" rx="20" class="card"/>
+    <circle cx="55" cy="54" r="27" fill="#fff"/>
+    <g transform="translate(42 41) scale(1.7)"><use href="#slack"/></g>
+    <text x="102" y="56" class="label">Slack</text>
+    <text x="102" y="80" class="detail">Incoming webhook</text>
+    <path d="M28 104H258" stroke="#30363d"/>
+    <text x="28" y="132" class="detail">An actionable alert where you work</text>
+  </g>
+
+  <path d="M601 394V438" stroke="#79c0ff" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arrow)"/>
+  <g transform="translate(617 405)">
+    <rect width="48" height="25" rx="12.5" fill="#0d2d52"/>
+    <text x="24" y="17" text-anchor="middle" class="note">OIDC</text>
+  </g>
+  <g transform="translate(360 446)">
+    <rect width="480" height="90" rx="18" class="card"/>
+    <g transform="translate(30 26)"><use href="#aws-logo"/></g>
+    <text x="100" y="34" class="label">Your AWS account</text>
+    <text x="100" y="57" class="detail">Private S3 bucket stores the review state for GitHub Actions</text>
+    <text x="100" y="77" class="detail">Least-privilege IAM role · short-lived OIDC access</text>
+  </g>
+</svg>
