@@ -53,10 +53,12 @@ It creates a private, versioned S3 bucket and an IAM role whose only data access
 ```sh
 cd terraform
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your bucket name and GitHub OIDC subject.
+# Edit terraform.tfvars with your bucket name, unique IAM role name, and GitHub OIDC subject.
 terraform init
 terraform apply
 ```
+
+`github_actions_role_name` has no default: IAM role names must be unique within an AWS account, so choose one that identifies this application repository or infrastructure deployment.
 
 Use the three Terraform outputs to create these **GitHub Actions repository variables in the application repository**:
 

@@ -5,6 +5,10 @@ aws_region = "us-east-1"
 # S3 bucket names are global. Include an account- or organization-specific suffix.
 state_bucket_name = "my-app-store-reviews-state-123456789012"
 
+# IAM role names must be unique within an AWS account. Choose a name that
+# identifies this application repository or infrastructure deployment.
+github_actions_role_name = "my-app-store-reviews-github-actions"
+
 # The OIDC subject must match the repository and branch that run the workflow.
 # For repositories created before 2026-07-15 that use the original GitHub format:
 github_oidc_subject = "repo:OWNER/REPOSITORY:ref:refs/heads/main"
