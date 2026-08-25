@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from email.message import Message
+from http.client import IncompleteRead
 from io import BytesIO, StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -38,6 +39,13 @@ def json_response(payload):
     return response
 
 
+def truncated_json_response():
+    response = MagicMock()
+    response.__enter__.return_value.status = 200
+    response.__enter__.return_value.read.side_effect = IncompleteRead(b'{"data":', 3)
+    return response
+
+
 class AppStoreReviewsToSlackTests(unittest.TestCase):
     def test_get_app_id_queries_by_bundle_id(self):
         with patch.object(reviews, "request_json", return_value={"data": [{"id": "123"}]}) as request_json:
@@ -60,6 +68,21 @@ class AppStoreReviewsToSlackTests(unittest.TestCase):
 
         self.assertEqual(urlopen.call_count, 2)
         self.assertEqual(urlopen.call_args.kwargs["timeout"], reviews.REQUEST_TIMEOUT_SECONDS)
+        sleep.assert_called_once_with(1)
+
+    def test_request_json_retries_when_the_response_body_is_truncated(self):
+        with (
+            patch.object(
+                reviews.urllib.request,
+                "urlopen",
+                side_effect=[truncated_json_response(), json_response({"data": []})],
+            ) as urlopen,
+            patch.object(reviews.time, "sleep") as sleep,
+            patch.object(reviews.sys, "stderr", new=StringIO()),
+        ):
+            self.assertEqual(reviews.request_json("https://example.test", "token"), {"data": []})
+
+        self.assertEqual(urlopen.call_count, 2)
         sleep.assert_called_once_with(1)
 
     def test_slack_retries_with_retry_after_and_does_not_retry_client_errors(self):

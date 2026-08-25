@@ -2,6 +2,7 @@
 """Post new App Store customer reviews to Slack and maintain a watermark."""
 
 import argparse
+import http.client
 import json
 import os
 import subprocess
@@ -34,15 +35,22 @@ def retry_delay_seconds(error, attempt):
     return min(2**attempt, MAX_RETRY_DELAY_SECONDS)
 
 
-def urlopen_with_retry(request, service):
-    """Open a request with a timeout and bounded retries for transient failures."""
+def request_with_retry(request, service, consume_response):
+    """Perform and consume a request with a timeout and bounded transient retries."""
     for attempt in range(MAX_REQUEST_ATTEMPTS):
         try:
-            return urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS)
+            with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+                return consume_response(response)
         except urllib.error.HTTPError as error:
             failure = error
             retryable = error.code in RETRYABLE_HTTP_STATUS_CODES
-        except (urllib.error.URLError, TimeoutError) as error:
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            ConnectionResetError,
+            http.client.IncompleteRead,
+            json.JSONDecodeError,
+        ) as error:
             failure = error
             retryable = True
 
@@ -66,8 +74,11 @@ def request_json(url, token, method="GET", body=None):
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
     )
     try:
-        with urlopen_with_retry(request, "App Store Connect") as response:
-            return json.load(response) if response.status != 204 else {}
+        return request_with_retry(
+            request,
+            "App Store Connect",
+            lambda response: json.load(response) if response.status != 204 else {},
+        )
     except urllib.error.HTTPError as error:
         detail = error.read().decode(errors="replace")[:600]
         raise RuntimeError(f"{method} {url} -> {error.code}: {detail}") from error
@@ -183,9 +194,11 @@ def post_to_slack(webhook_url, review):
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urlopen_with_retry(request, "Slack") as response:
+        def require_success(response):
             if not 200 <= response.status < 300:
                 raise RuntimeError(f"Slack webhook returned {response.status}")
+
+        request_with_retry(request, "Slack", require_success)
     except urllib.error.HTTPError as error:
         detail = error.read().decode(errors="replace")[:600]
         raise RuntimeError(f"Slack webhook returned {error.code}: {detail}") from error
