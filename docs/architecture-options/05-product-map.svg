@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="title description">
+  <title id="title">Option 5: product system map</title>
+  <desc id="description">A product-oriented map showing App Store review data becoming Slack context through user-owned GitHub and AWS components.</desc>
+  <style>
+    :root { --ink:#172033; --muted:#667085; --surface:#ffffff; --soft:#f7f8fa; --line:#cfd5df; --blue:#0969da; --green:#1a7f37; --blueSoft:#eaf3ff; --greenSoft:#eefbf2; }
+    @media (prefers-color-scheme: dark) { :root { --ink:#f0f6fc; --muted:#9da7b3; --surface:#161b22; --soft:#0d1117; --line:#30363d; --blue:#58a6ff; --green:#56d364; --blueSoft:#071d36; --greenSoft:#082b16; } }
+    .title{font:600 30px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--ink)} .sub{font:400 16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--muted)} .label{font:600 18px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--ink)} .detail{font:400 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--muted)} .pill{font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--green)}
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="var(--blue)"/></marker>
+    <g id="github"><path fill="currentColor" d="M12 .7A11.3 11.3 0 0 0 8.4 22.7c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.3 11.3 0 0 0 12 .7Z"/></g>
+    <g id="slack"><rect x="7" y="1" width="6" height="13" rx="3" fill="#36c5f0"/><rect x="1" y="7" width="13" height="6" rx="3" fill="#36c5f0"/><rect x="11" y="10" width="13" height="6" rx="3" fill="#2eb67d"/><rect x="11" y="10" width="6" height="13" rx="3" fill="#2eb67d"/><rect x="10" y="11" width="13" height="6" rx="3" fill="#ecb22e"/><rect x="11" y="11" width="6" height="13" rx="3" fill="#ecb22e"/><rect x="1" y="11" width="13" height="6" rx="3" fill="#e01e5a"/><rect x="7" y="11" width="6" height="13" rx="3" fill="#e01e5a"/></g>
+    <g id="aws"><text x="0" y="15" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#16191f">aws</text><path d="M1 20Q11 27 25 20" fill="none" stroke="#ff9900" stroke-width="2.5" stroke-linecap="round"/></g>
+  </defs>
+  <rect width="1200" height="500" rx="28" fill="var(--soft)"/>
+  <text x="60" y="68" class="title">Turn App Store feedback into context your team can act on.</text>
+  <text x="60" y="98" class="sub">The integration is small. The ownership boundary is the feature.</text>
+
+  <g transform="translate(60 150)">
+    <rect width="320" height="250" rx="24" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+    <rect x="22" y="22" width="130" height="28" rx="14" fill="var(--blueSoft)"/><text x="39" y="41" class="pill">SIGNAL IN</text>
+    <circle cx="62" cy="101" r="28" fill="#0a84ff"/><text x="52" y="110" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#fff">A</text>
+    <text x="106" y="96" class="label">App Store Connect</text><text x="106" y="120" class="detail">A new customer review</text>
+    <path d="M30 161H290" stroke="var(--line)"/>
+    <text x="30" y="196" class="detail">Rating · title · body · territory</text><text x="30" y="222" class="detail">No extra dashboard required</text>
+  </g>
+  <g transform="translate(440 130)">
+    <rect width="320" height="290" rx="24" fill="var(--blueSoft)" stroke="var(--blue)" stroke-width="1.5"/>
+    <rect x="22" y="22" width="160" height="28" rx="14" fill="var(--surface)"/><text x="39" y="41" class="pill">YOUR AUTOMATION</text>
+    <circle cx="61" cy="101" r="30" fill="var(--ink)"/><g transform="translate(49 89) scale(1.02)" fill="var(--surface)"><use href="#github"/></g>
+    <text x="108" y="96" class="label">GitHub Actions</text><text x="108" y="120" class="detail">Runs the code you can edit</text>
+    <rect x="22" y="156" width="276" height="48" rx="14" fill="var(--surface)"/><text x="42" y="186" class="detail">Python review poller</text>
+    <rect x="22" y="216" width="276" height="48" rx="14" fill="var(--surface)"/><text x="42" y="246" class="detail">Slack message formatter</text>
+  </g>
+  <g transform="translate(820 150)">
+    <rect width="320" height="250" rx="24" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+    <rect x="22" y="22" width="145" height="28" rx="14" fill="var(--greenSoft)"/><text x="39" y="41" class="pill">CONTEXT OUT</text>
+    <circle cx="62" cy="101" r="28" fill="#fff" stroke="#e4e8ee"/><g transform="translate(50 89) scale(1.02)"><use href="#slack"/></g>
+    <text x="106" y="96" class="label">Slack</text><text x="106" y="120" class="detail">A useful notification</text>
+    <path d="M30 161H290" stroke="var(--line)"/>
+    <text x="30" y="196" class="detail">Reply, triage, or extend it</text><text x="30" y="222" class="detail">however your team works</text>
+  </g>
+  <path d="M380 275H438" stroke="var(--blue)" stroke-width="3" marker-end="url(#arrow)"/><path d="M760 275H818" stroke="var(--blue)" stroke-width="3" marker-end="url(#arrow)"/>
+  <g transform="translate(455 440)"><g transform="translate(0 0)"><use href="#aws"/></g><text x="72" y="15" class="detail">AWS keeps the private review watermark; GitHub reaches it through OIDC.</text></g>
+</svg>

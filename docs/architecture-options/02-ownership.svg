@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title description">
+  <title id="title">Option 2: infrastructure ownership map</title>
+  <desc id="description">App Store Connect and Slack connect to a user-owned GitHub repository and AWS account.</desc>
+  <style>
+    :root { --ink:#172033; --muted:#667085; --surface:#ffffff; --soft:#f7f8fa; --line:#cfd5df; --blue:#0969da; --blueSoft:#eaf3ff; }
+    @media (prefers-color-scheme: dark) { :root { --ink:#f0f6fc; --muted:#9da7b3; --surface:#161b22; --soft:#0d1117; --line:#30363d; --blue:#58a6ff; --blueSoft:#071d36; } }
+    .title{font:600 30px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--ink)} .sub{font:400 16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--muted)}
+    .label{font:600 18px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--ink)} .detail{font:400 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--muted)} .tiny{font:600 12px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--blue);letter-spacing:.08em}
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="var(--blue)"/></marker>
+    <g id="github"><path fill="currentColor" d="M12 .7A11.3 11.3 0 0 0 8.4 22.7c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.3 11.3 0 0 0 12 .7Z"/></g>
+    <g id="slack"><rect x="7" y="1" width="6" height="13" rx="3" fill="#36c5f0"/><rect x="1" y="7" width="13" height="6" rx="3" fill="#36c5f0"/><rect x="11" y="10" width="13" height="6" rx="3" fill="#2eb67d"/><rect x="11" y="10" width="6" height="13" rx="3" fill="#2eb67d"/><rect x="10" y="11" width="13" height="6" rx="3" fill="#ecb22e"/><rect x="11" y="11" width="6" height="13" rx="3" fill="#ecb22e"/><rect x="1" y="11" width="13" height="6" rx="3" fill="#e01e5a"/><rect x="7" y="11" width="6" height="13" rx="3" fill="#e01e5a"/></g>
+    <g id="aws"><text x="0" y="15" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#16191f">aws</text><path d="M1 20Q11 27 25 20" fill="none" stroke="#ff9900" stroke-width="2.5" stroke-linecap="round"/></g>
+  </defs>
+  <rect width="1200" height="520" rx="28" fill="var(--soft)"/>
+  <text x="60" y="65" class="title">Everything important stays in accounts you own.</text>
+  <text x="60" y="94" class="sub">App Store Connect and Slack are just the edges of your automation stack.</text>
+
+  <g transform="translate(60 160)">
+    <rect width="210" height="125" rx="20" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+    <circle cx="42" cy="42" r="24" fill="#0a84ff"/><text x="33" y="50" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#fff">A</text>
+    <text x="78" y="42" class="label">App Store</text><text x="24" y="96" class="detail">Reviews arrive here</text>
+  </g>
+  <g transform="translate(930 160)">
+    <rect width="210" height="125" rx="20" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+    <circle cx="42" cy="42" r="24" fill="#fff" stroke="#e4e8ee"/><g transform="translate(30 30) scale(1.02)"><use href="#slack"/></g>
+    <text x="78" y="42" class="label">Slack</text><text x="24" y="96" class="detail">Your notification channel</text>
+  </g>
+  <path d="M270 223H360" stroke="var(--blue)" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M840 223H930" stroke="var(--blue)" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g transform="translate(360 128)">
+    <rect width="480" height="190" rx="24" fill="var(--blueSoft)" stroke="var(--blue)" stroke-width="1.5"/>
+    <text x="28" y="35" class="tiny">YOUR APPLICATION REPOSITORY</text>
+    <circle cx="60" cy="98" r="30" fill="var(--ink)"/><g transform="translate(48 86) scale(1.02)" fill="var(--surface)"><use href="#github"/></g>
+    <text x="108" y="91" class="label">GitHub Actions</text><text x="108" y="115" class="detail">Schedules the review workflow</text>
+    <rect x="30" y="140" width="200" height="30" rx="15" fill="var(--surface)"/><text x="47" y="160" class="detail">Python review poller</text>
+    <rect x="245" y="140" width="205" height="30" rx="15" fill="var(--surface)"/><text x="263" y="160" class="detail">Slack message formatter</text>
+  </g>
+
+  <path d="M600 318V357" stroke="var(--blue)" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="616" y="347" class="tiny">OIDC</text>
+  <g transform="translate(360 365)">
+    <rect width="480" height="105" rx="24" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="28" y="34" class="tiny">YOUR AWS ACCOUNT</text>
+    <g transform="translate(34 48)"><use href="#aws"/></g>
+    <text x="108" y="66" class="label">Least-privilege IAM role</text><text x="108" y="89" class="detail">Private S3 watermark state · no permanent AWS credentials</text>
+  </g>
+</svg>

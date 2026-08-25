@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="title description">
+  <title id="title">Option 1: horizontal App Store review flow</title>
+  <desc id="description">App Store Connect sends reviews to GitHub Actions, which posts to Slack and stores its state in AWS.</desc>
+  <style>
+    :root { --ink:#172033; --muted:#667085; --surface:#ffffff; --soft:#f7f8fa; --line:#cfd5df; --blue:#0969da; }
+    @media (prefers-color-scheme: dark) { :root { --ink:#f0f6fc; --muted:#9da7b3; --surface:#161b22; --soft:#0d1117; --line:#30363d; --blue:#58a6ff; } }
+    .title{font:600 30px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--ink)}
+    .sub{font:400 16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--muted)}
+    .card{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+    .label{font:600 19px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--ink)}
+    .detail{font:400 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--muted)}
+    .note{font:500 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--blue)}
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9Z" fill="var(--blue)"/></marker>
+    <g id="github"><path fill="currentColor" d="M12 .7A11.3 11.3 0 0 0 8.4 22.7c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.3 11.3 0 0 0 12 .7Z"/></g>
+    <g id="slack">
+      <rect x="7" y="1" width="6" height="13" rx="3" fill="#36c5f0"/><rect x="1" y="7" width="13" height="6" rx="3" fill="#36c5f0"/>
+      <rect x="11" y="10" width="13" height="6" rx="3" fill="#2eb67d"/><rect x="11" y="10" width="6" height="13" rx="3" fill="#2eb67d"/>
+      <rect x="10" y="11" width="13" height="6" rx="3" fill="#ecb22e"/><rect x="11" y="11" width="6" height="13" rx="3" fill="#ecb22e"/>
+      <rect x="1" y="11" width="13" height="6" rx="3" fill="#e01e5a"/><rect x="7" y="11" width="6" height="13" rx="3" fill="#e01e5a"/>
+    </g>
+    <g id="aws"><text x="0" y="15" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#16191f">aws</text><path d="M1 20Q11 27 25 20" fill="none" stroke="#ff9900" stroke-width="2.5" stroke-linecap="round"/></g>
+  </defs>
+  <rect width="1200" height="500" rx="28" fill="var(--soft)"/>
+  <text x="60" y="68" class="title">A review arrives. Your automation does the rest.</text>
+  <text x="60" y="98" class="sub">A small pipeline that lives in repositories and infrastructure you control.</text>
+
+  <path d="M331 230H458" stroke="var(--blue)" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M742 230H869" stroke="var(--blue)" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="360" y="208" class="note">new customer review</text>
+  <text x="773" y="208" class="note">rich Slack message</text>
+
+  <g transform="translate(60 155)">
+    <rect width="270" height="150" rx="20" class="card"/>
+    <circle cx="42" cy="42" r="25" fill="#0a84ff"/><text x="33" y="50" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#fff">A</text>
+    <text x="82" y="38" class="label">App Store Connect</text>
+    <text x="82" y="62" class="detail">Customer Reviews API</text>
+    <text x="24" y="118" class="detail">New ratings and written feedback</text>
+  </g>
+  <g transform="translate(465 155)">
+    <rect width="275" height="150" rx="20" class="card"/>
+    <circle cx="42" cy="42" r="25" fill="var(--ink)"/><g transform="translate(30 30) scale(1.02)" fill="var(--surface)"><use href="#github"/></g>
+    <text x="82" y="38" class="label">GitHub Actions</text>
+    <text x="82" y="62" class="detail">Scheduled review poller</text>
+    <text x="24" y="118" class="detail">Your Python, your schedule, your repo</text>
+  </g>
+  <g transform="translate(870 155)">
+    <rect width="270" height="150" rx="20" class="card"/>
+    <circle cx="42" cy="42" r="25" fill="#fff" stroke="#e4e8ee"/><g transform="translate(30 30) scale(1.02)"><use href="#slack"/></g>
+    <text x="82" y="38" class="label">Slack</text>
+    <text x="82" y="62" class="detail">Incoming webhook</text>
+    <text x="24" y="118" class="detail">A useful notification where you work</text>
+  </g>
+
+  <path d="M603 306V350" stroke="var(--line)" stroke-width="2" stroke-dasharray="5 5"/>
+  <g transform="translate(400 355)">
+    <rect width="405" height="92" rx="18" class="card"/>
+    <g transform="translate(30 28)"><use href="#aws"/></g>
+    <text x="115" y="38" class="label">Your AWS account</text>
+    <text x="115" y="62" class="detail">OIDC role + private S3 review watermark</text>
+  </g>
+</svg>
