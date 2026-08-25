@@ -1,8 +1,11 @@
 import json
 import tempfile
 import unittest
+from email.message import Message
+from io import BytesIO, StringIO
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError
 
 from scripts import app_store_reviews_to_slack as reviews
 
@@ -22,6 +25,19 @@ def review(review_id, rating=5, **attributes):
     }
 
 
+def http_error(status, retry_after=None):
+    headers = Message()
+    if retry_after is not None:
+        headers["Retry-After"] = str(retry_after)
+    return HTTPError("https://example.test", status, "temporary error", headers, BytesIO(b"temporary error"))
+
+
+def json_response(payload):
+    response = StringIO(json.dumps(payload))
+    response.status = 200
+    return response
+
+
 class AppStoreReviewsToSlackTests(unittest.TestCase):
     def test_get_app_id_queries_by_bundle_id(self):
         with patch.object(reviews, "request_json", return_value={"data": [{"id": "123"}]}) as request_json:
@@ -29,6 +45,49 @@ class AppStoreReviewsToSlackTests(unittest.TestCase):
 
         self.assertEqual(app_id, "123")
         self.assertIn("filter%5BbundleId%5D=com.example.myapp", request_json.call_args.args[0])
+
+    def test_request_json_retries_transient_failures_with_a_timeout(self):
+        with (
+            patch.object(
+                reviews.urllib.request,
+                "urlopen",
+                side_effect=[http_error(503), json_response({"data": []})],
+            ) as urlopen,
+            patch.object(reviews.time, "sleep") as sleep,
+            patch.object(reviews.sys, "stderr", new=StringIO()),
+        ):
+            self.assertEqual(reviews.request_json("https://example.test", "token"), {"data": []})
+
+        self.assertEqual(urlopen.call_count, 2)
+        self.assertEqual(urlopen.call_args.kwargs["timeout"], reviews.REQUEST_TIMEOUT_SECONDS)
+        sleep.assert_called_once_with(1)
+
+    def test_slack_retries_with_retry_after_and_does_not_retry_client_errors(self):
+        successful_response = MagicMock()
+        successful_response.__enter__.return_value.status = 200
+        with (
+            patch.object(
+                reviews.urllib.request,
+                "urlopen",
+                side_effect=[http_error(429, retry_after=7), successful_response],
+            ) as urlopen,
+            patch.object(reviews.time, "sleep") as sleep,
+            patch.object(reviews.sys, "stderr", new=StringIO()),
+        ):
+            reviews.post_to_slack("https://hooks.slack.com/services/example", review("123"))
+
+        self.assertEqual(urlopen.call_count, 2)
+        sleep.assert_called_once_with(7)
+
+        with (
+            patch.object(reviews.urllib.request, "urlopen", side_effect=http_error(400)) as urlopen,
+            patch.object(reviews.time, "sleep") as sleep,
+            self.assertRaisesRegex(RuntimeError, "Slack webhook returned 400"),
+        ):
+            reviews.post_to_slack("https://hooks.slack.com/services/example", review("123"))
+
+        urlopen.assert_called_once()
+        sleep.assert_not_called()
 
     def test_get_reviews_returns_new_reviews_across_pages_until_the_watermark(self):
         first_page = "https://example.test/first"
