@@ -1,0 +1,17 @@
+# Choose a region near you. The workflow reads this exact value through the
+# AWS_REGION GitHub repository variable after Terraform applies.
+aws_region = "us-east-1"
+
+# S3 bucket names are global. Include an account- or organization-specific suffix.
+state_bucket_name = "my-app-store-reviews-state-123456789012"
+
+# The OIDC subject must match the repository and branch that run the workflow.
+# For repositories created before 2026-07-15 that use the original GitHub format:
+github_oidc_subject = "repo:OWNER/REPOSITORY:ref:refs/heads/main"
+
+# For new repositories that use GitHub's immutable subject format, use this instead:
+# github_oidc_subject = "repo:OWNER@OWNER_ID/REPOSITORY@REPOSITORY_ID:ref:refs/heads/main"
+
+# If this AWS account already has the GitHub Actions OIDC provider, set its ARN
+# and Terraform will reuse it instead of trying to create another one.
+# github_oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"

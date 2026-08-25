@@ -1,0 +1,94 @@
+name: App Store Reviews
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+      timezone: America/Chicago
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: app-store-reviews
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    name: Notify Slack of new reviews
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      STATE_BUCKET: ${{ vars.AWS_S3_BUCKET }}
+      STATE_KEY: app-store-reviews/state.json
+      APP_STORE_CONNECT_BUNDLE_ID: ${{ vars.APP_STORE_CONNECT_BUNDLE_ID }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download review state
+        run: |
+          STATE_FILE="$RUNNER_TEMP/review-state.json"
+          STATE_COUNT="$(aws s3api list-objects-v2 \
+            --bucket "$STATE_BUCKET" \
+            --prefix "$STATE_KEY" \
+            --max-keys 2 \
+            --query 'KeyCount' \
+            --output text)"
+          if [ "$STATE_COUNT" = "0" ]; then
+            echo "No review state exists yet."
+          elif [ "$STATE_COUNT" = "1" ]; then
+            aws s3api get-object --bucket "$STATE_BUCKET" --key "$STATE_KEY" "$STATE_FILE" >/dev/null
+            echo "Downloaded existing review state."
+          else
+            echo "Expected zero or one review state object, found $STATE_COUNT." >&2
+            exit 1
+          fi
+          echo "STATE_FILE=$STATE_FILE" >> "$GITHUB_ENV"
+
+      - name: Process App Store Reviews
+        id: process
+        env:
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          ORIGINAL_STATE="$RUNNER_TEMP/original-review-state.json"
+          if [ -f "$STATE_FILE" ]; then
+            cp "$STATE_FILE" "$ORIGINAL_STATE"
+          fi
+
+          KEY_PATH="$RUNNER_TEMP/AuthKey_$APP_STORE_CONNECT_KEY_ID.p8"
+          echo "KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          printf '%s' "$APP_STORE_CONNECT_PRIVATE_KEY" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+
+          python3 scripts/app_store_reviews_to_slack.py \
+            --bundle-id "$APP_STORE_CONNECT_BUNDLE_ID" \
+            --key-path "$KEY_PATH" \
+            --key-id "$APP_STORE_CONNECT_KEY_ID" \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --state-file "$STATE_FILE"
+
+          if { [ ! -f "$ORIGINAL_STATE" ] || ! cmp -s "$ORIGINAL_STATE" "$STATE_FILE"; }; then
+            echo "state_changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload review state
+        if: steps.process.outputs.state_changed == 'true'
+        run: aws s3api put-object --bucket "$STATE_BUCKET" --key "$STATE_KEY" --body "$STATE_FILE"
+
+      - name: Clean up App Store Connect key
+        if: always()
+        run: |
+          if [ -n "${KEY_PATH:-}" ]; then
+            rm -f "$KEY_PATH"
+          fi
