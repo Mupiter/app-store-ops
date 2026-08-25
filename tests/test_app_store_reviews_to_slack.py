@@ -61,7 +61,7 @@ class AppStoreReviewsToSlackTests(unittest.TestCase):
         self.assertEqual(state["app_id"], "123")
         self.assertEqual(state["last_seen_review_id"], "review-456")
 
-    def test_slack_payload_escapes_control_characters_and_limits_the_body(self):
+    def test_slack_payload_escapes_control_characters_limits_the_body_and_includes_the_review_id(self):
         payload = reviews.slack_payload(
             review(
                 "123",
@@ -76,6 +76,7 @@ class AppStoreReviewsToSlackTests(unittest.TestCase):
         self.assertEqual(payload["blocks"][0]["text"]["text"], "New App Store review — ★★★☆☆")
         self.assertIn("A &lt; B &amp; C", payload["blocks"][1]["text"]["text"])
         self.assertLessEqual(len(payload["blocks"][1]["text"]["text"]), 3000)
+        self.assertIn({"type": "mrkdwn", "text": "*Review ID*\n123"}, payload["blocks"][1]["fields"])
 
     def test_read_state_rejects_an_unknown_schema(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -113,6 +113,7 @@ def slack_payload(review):
     nickname = slack_escape(attributes.get("reviewerNickname") or "App Store customer")
     territory = slack_escape(attributes.get("territory") or "Unknown territory")
     created = slack_escape(attributes.get("createdDate") or "Unknown date")
+    review_id = slack_escape(review["id"])
     title = slack_escape(attributes.get("title") or "Untitled review")
     body = slack_escape(attributes.get("body") or "No review text provided.")
     review_text = f"*{title}*\n{body}"
@@ -130,6 +131,7 @@ def slack_payload(review):
                     {"type": "mrkdwn", "text": f"*Reviewer*\n{nickname}"},
                     {"type": "mrkdwn", "text": f"*Storefront*\n{territory}"},
                     {"type": "mrkdwn", "text": f"*Created*\n{created}"},
+                    {"type": "mrkdwn", "text": f"*Review ID*\n{review_id}"},
                 ],
             },
         ],
