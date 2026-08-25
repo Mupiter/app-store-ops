@@ -12,6 +12,7 @@ It is designed for developers who want to own and extend their App Store automat
 - Posts each new review to a Slack incoming webhook with rating, title, body, reviewer, storefront, and creation time.
 - Stores a single review-ID watermark in your private S3 bucket, so a scheduled run only posts newly seen reviews.
 - On its first run, creates the watermark but deliberately does not post historic reviews.
+- Retries transient App Store Connect and Slack failures with bounded backoff.
 - Uses GitHub Actions OIDC for AWS access—no long-lived AWS credentials are stored in GitHub.
 
 The Python implementation uses only the standard library plus the `openssl` executable preinstalled on GitHub-hosted Ubuntu runners.
