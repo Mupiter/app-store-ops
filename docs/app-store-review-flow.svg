@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title description">
   <title id="title">App Store reviews to Slack architecture</title>
   <desc id="description">App Store Connect sends customer reviews to a GitHub Actions workflow. The workflow posts alerts to Slack and stores its review state in a private S3 bucket in the user's AWS account through OpenID Connect.</desc>
   <style>
@@ -91,7 +91,7 @@
     <rect width="480" height="90" rx="18" class="card"/>
     <g transform="translate(30 26)"><use href="#aws-logo"/></g>
     <text x="100" y="34" class="label">Your AWS account</text>
-    <text x="100" y="57" class="detail">Private S3 bucket stores the review state for GitHub Actions</text>
-    <text x="100" y="77" class="detail">Least-privilege IAM role · short-lived OIDC access</text>
+    <text x="100" y="57" class="detail">Private S3 bucket stores review state</text>
+    <text x="100" y="77" class="detail">GitHub Actions accesses it using OIDC</text>
   </g>
 </svg>

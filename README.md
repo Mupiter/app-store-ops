@@ -6,8 +6,6 @@ It is designed for developers who want to own and extend their App Store automat
 
 ![App Store reviews flow: App Store Connect sends customer reviews to GitHub Actions, which posts Slack alerts and uses a private S3 bucket in your AWS account to store review state.](docs/app-store-review-flow.svg)
 
-This repository does not run App Store operations for itself. Its only active workflow, [.github/workflows/test.yml](.github/workflows/test.yml), runs the unit tests. The customer-facing workflow lives in [github-workflows/app-store-reviews.yml](github-workflows/app-store-reviews.yml) and becomes active only after you copy it into a repository that you control.
-
 ## What it does
 
 - Looks up an app by bundle ID and polls App Store Connect for customer reviews.
@@ -20,7 +18,7 @@ The Python implementation uses only the standard library plus the `openssl` exec
 
 ## Integrate it into existing repositories
 
-Use the pieces in this repository where they fit your existing setup. The common arrangement is:
+Start with the building blocks that fit your existing setup. App Store Ops is a reference implementation, so it runs only its test suite; the [review workflow template](github-workflows/app-store-reviews.yml) becomes active only after you copy it into an application repository you control. The common arrangement is:
 
 | Your repository | Copy from this repository |
 | --- | --- |
