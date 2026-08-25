@@ -86,7 +86,7 @@ In the application repository’s **Settings → Secrets and variables → Actio
 | Secret | `APP_STORE_CONNECT_PRIVATE_KEY` | Entire contents of the downloaded `.p8` file |
 | Secret | `APP_STORE_CONNECT_KEY_ID` | App Store Connect API key ID |
 | Secret | `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect issuer ID |
-| Secret | `SLACK_WEBHOOK_URL` | Slack incoming-webhook URL for the destination channel |
+| Secret | `SLACK_WEBHOOK_URL` | Slack incoming-webhook URL for the destination channel; starts with [`https://hooks.slack.com/services`](https://hooks.slack.com/services) |
 | Variable | `APP_STORE_CONNECT_BUNDLE_ID` | App bundle ID, for example `com.example.myapp` |
 | Variable | `AWS_REGION` | Terraform `aws_region` output |
 | Variable | `AWS_S3_BUCKET` | Terraform `state_bucket_name` output |
