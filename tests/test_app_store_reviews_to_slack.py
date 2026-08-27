@@ -278,52 +278,6 @@ class AppStoreReviewsToSlackTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in unseen], ["first-review"])
         self.assertTrue(watermark_found)
 
-    def test_a_v1_watermark_migrates_after_processing_its_complete_tied_group(self):
-        tied_timestamp = "2026-08-25T12:00:00Z"
-        response = {
-            "data": [
-                review("legacy-watermark", createdDate=tied_timestamp),
-                review("new-review", createdDate=tied_timestamp),
-                review("older", createdDate="2026-08-25T11:59:59Z"),
-            ]
-        }
-
-        with patch.object(reviews, "request_json", return_value=response):
-            newest_watermark, unseen, watermark_found = reviews.get_reviews(
-                "token",
-                "123",
-                reviews.LegacyReviewWatermark("legacy-watermark"),
-            )
-
-        self.assertEqual(
-            newest_watermark,
-            reviews.ReviewWatermark(tied_timestamp, frozenset({"legacy-watermark", "new-review"})),
-        )
-        self.assertEqual([item["id"] for item in unseen], ["new-review"])
-        self.assertTrue(watermark_found)
-
-    def test_a_v1_watermark_migrates_when_it_is_the_oldest_review(self):
-        response = {
-            "data": [
-                review("new-review", createdDate="2026-08-25T12:00:01Z"),
-                review("legacy-watermark", createdDate="2026-08-25T12:00:00Z"),
-            ]
-        }
-
-        with patch.object(reviews, "request_json", return_value=response):
-            newest_watermark, unseen, watermark_found = reviews.get_reviews(
-                "token",
-                "123",
-                reviews.LegacyReviewWatermark("legacy-watermark"),
-            )
-
-        self.assertEqual(
-            newest_watermark,
-            reviews.ReviewWatermark("2026-08-25T12:00:01Z", frozenset({"new-review"})),
-        )
-        self.assertEqual([item["id"] for item in unseen], ["new-review"])
-        self.assertTrue(watermark_found)
-
     def test_state_round_trip_includes_the_app_id_and_watermark(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "state.json"
@@ -339,15 +293,6 @@ class AppStoreReviewsToSlackTests(unittest.TestCase):
         self.assertEqual(state["schema_version"], 2)
         self.assertEqual(state["last_seen_review_created_date"], "2026-08-25T12:00:00Z")
         self.assertEqual(state["last_seen_review_ids"], ["review-456", "review-789"])
-
-    def test_reads_a_v1_state_for_safe_timestamp_boundary_migration(self):
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "state.json"
-            path.write_text(json.dumps({"schema_version": 1, "app_id": "123", "last_seen_review_id": "review-456"}))
-
-            state = reviews.read_state(path)
-
-        self.assertEqual(reviews.state_watermark(state), reviews.LegacyReviewWatermark("review-456"))
 
     def test_slack_payload_escapes_control_characters_limits_the_body_and_includes_the_review_id(self):
         payload = reviews.slack_payload(
@@ -366,13 +311,19 @@ class AppStoreReviewsToSlackTests(unittest.TestCase):
         self.assertLessEqual(len(payload["blocks"][1]["text"]["text"]), 3000)
         self.assertIn({"type": "mrkdwn", "text": "*Review ID*\n123"}, payload["blocks"][1]["fields"])
 
-    def test_read_state_rejects_an_unknown_schema(self):
+    def test_read_state_rejects_legacy_and_malformed_schemas(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "state.json"
-            path.write_text(json.dumps({"schema_version": 2, "app_id": "123", "last_seen_review_id": "456"}))
+            invalid_states = (
+                {"schema_version": 1, "app_id": "123", "last_seen_review_id": "456"},
+                {"schema_version": 2, "app_id": "123", "last_seen_review_id": "456"},
+            )
+            for invalid_state in invalid_states:
+                with self.subTest(invalid_state=invalid_state):
+                    path.write_text(json.dumps(invalid_state))
 
-            with self.assertRaisesRegex(RuntimeError, "invalid review state"):
-                reviews.read_state(path)
+                    with self.assertRaisesRegex(RuntimeError, "invalid review state"):
+                        reviews.read_state(path)
 
 
 if __name__ == "__main__":

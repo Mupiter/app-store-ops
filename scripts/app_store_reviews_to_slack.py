@@ -36,13 +36,6 @@ class ReviewWatermark:
     review_ids: frozenset[str]
 
 
-@dataclass(frozen=True)
-class LegacyReviewWatermark:
-    """The v1 single-ID watermark retained only for a safe one-run migration."""
-
-    review_id: str | None
-
-
 def retry_delay_seconds(error, attempt):
     """Return a bounded retry delay, honoring a numeric Retry-After header."""
     retry_after = error.headers.get("Retry-After") if getattr(error, "headers", None) else None
@@ -143,13 +136,10 @@ def get_reviews(token, app_id, watermark):
     newest_created_at = None
     newest_review_ids = set()
     unseen = []
-    watermark_found = watermark is None or (
-        isinstance(watermark, ReviewWatermark) and watermark.created_date is None
-    ) or (isinstance(watermark, LegacyReviewWatermark) and watermark.review_id is None)
-    legacy_boundary_at = None
+    watermark_found = watermark is None or watermark.created_date is None
     watermark_created_at = (
         parse_created_date(watermark.created_date, "review watermark")
-        if isinstance(watermark, ReviewWatermark) and watermark.created_date is not None
+        if watermark is not None and watermark.created_date is not None
         else None
     )
 
@@ -173,18 +163,6 @@ def get_reviews(token, app_id, watermark):
                     return newest_watermark(), [], True
                 continue
 
-            if isinstance(watermark, LegacyReviewWatermark):
-                if watermark.review_id is None:
-                    unseen.append(review)
-                    continue
-                if legacy_boundary_at is not None and created_at < legacy_boundary_at:
-                    return newest_watermark(), unseen, True
-                if review["id"] == watermark.review_id:
-                    legacy_boundary_at = created_at
-                    continue
-                unseen.append(review)
-                continue
-
             if watermark.created_date is None:
                 unseen.append(review)
                 continue
@@ -199,8 +177,6 @@ def get_reviews(token, app_id, watermark):
             return newest_watermark(), unseen, watermark_found
         url = response.get("links", {}).get("next")
 
-    if isinstance(watermark, LegacyReviewWatermark) and watermark.review_id is not None:
-        watermark_found = legacy_boundary_at is not None
     return newest_watermark(), unseen, watermark_found
 
 
@@ -209,10 +185,6 @@ def read_state(path):
     if not path.exists():
         return None
     state = json.loads(path.read_text())
-    if state.get("schema_version") == 1 and "last_seen_review_id" in state and "app_id" in state:
-        review_id = state["last_seen_review_id"]
-        if review_id is None or (isinstance(review_id, str) and review_id):
-            return state
     if (
         state.get("schema_version") != 2
         or "app_id" not in state
@@ -232,9 +204,7 @@ def read_state(path):
 
 
 def state_watermark(state):
-    """Return a v2 watermark or the legacy v1 boundary for migration."""
-    if state["schema_version"] == 1:
-        return LegacyReviewWatermark(state["last_seen_review_id"])
+    """Return the current timestamp-boundary watermark from valid state."""
     return ReviewWatermark(
         state["last_seen_review_created_date"],
         frozenset(state["last_seen_review_ids"]),

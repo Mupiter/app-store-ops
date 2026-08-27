@@ -99,7 +99,9 @@ In the application repository’s **Settings → Secrets and variables → Actio
 
 Open **Actions → App Store Reviews → Run workflow** in the application repository, on the branch named in `github_oidc_subject`. The first successful run saves every ID at the newest review timestamp as its watermark and sends no Slack notifications. It stops once that timestamp group is complete rather than traversing the app's full review history. Later scheduled runs post only new reviews.
 
-Existing single-ID watermark files migrate to the timestamp-boundary format after their next successful run. The migration processes the complete tied timestamp group before advancing state, so it does not silently lose a review.
+### Upgrade from v0.1.0
+
+This release intentionally does not read the original single-ID state format. Before upgrading an existing installation, delete `app-store-reviews/state.json` from its state bucket and run the workflow manually once. That run creates the current timestamp-boundary watermark without posting historic reviews.
 
 ## Local development
 
