@@ -11,6 +11,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -25,6 +26,21 @@ REQUEST_TIMEOUT_SECONDS = 30
 MAX_REQUEST_ATTEMPTS = 3
 MAX_RETRY_DELAY_SECONDS = 60
 RETRYABLE_HTTP_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+@dataclass(frozen=True)
+class ReviewWatermark:
+    """The complete set of reviews at the newest observed timestamp."""
+
+    created_date: str | None
+    review_ids: frozenset[str]
+
+
+@dataclass(frozen=True)
+class LegacyReviewWatermark:
+    """The v1 single-ID watermark retained only for a safe one-run migration."""
+
+    review_id: str | None
 
 
 def retry_delay_seconds(error, attempt):
@@ -93,8 +109,16 @@ def get_app_id(token, bundle_id):
     return apps[0]["id"]
 
 
+def review_created_date(review):
+    """Return a review's required App Store Connect timestamp."""
+    created_date = review["attributes"]["createdDate"]
+    if not isinstance(created_date, str) or not created_date:
+        raise RuntimeError(f"review {review['id']} has an invalid createdDate")
+    return created_date
+
+
 def get_reviews(token, app_id, watermark):
-    """Return every review newer than ``watermark``, newest first from Apple."""
+    """Return a new watermark, unseen reviews, and whether an existing boundary was found."""
     query = urllib.parse.urlencode(
         {
             "fields[customerReviews]": "rating,title,body,reviewerNickname,createdDate,territory",
@@ -103,21 +127,62 @@ def get_reviews(token, app_id, watermark):
         }
     )
     url = f"{API}/v1/apps/{app_id}/customerReviews?{query}"
-    newest_id = None
+    newest_created_date = None
+    newest_review_ids = set()
     unseen = []
+    watermark_found = watermark is None or (
+        isinstance(watermark, ReviewWatermark) and watermark.created_date is None
+    ) or (isinstance(watermark, LegacyReviewWatermark) and watermark.review_id is None)
+    legacy_boundary_date = None
+
+    def newest_watermark():
+        return ReviewWatermark(newest_created_date, frozenset(newest_review_ids))
 
     while url:
         response = request_json(url, token)
         reviews = response["data"]
-        if newest_id is None and reviews:
-            newest_id = reviews[0]["id"]
         for review in reviews:
-            if watermark is not None and review["id"] == watermark:
-                return newest_id, unseen, True
-            unseen.append(review)
+            created_date = review_created_date(review)
+            if newest_created_date is None:
+                newest_created_date = created_date
+            if created_date == newest_created_date:
+                newest_review_ids.add(review["id"])
+
+            if watermark is None:
+                # Bootstrap only needs the newest timestamp group, not the full history.
+                if created_date < newest_created_date:
+                    return newest_watermark(), [], True
+                continue
+
+            if isinstance(watermark, LegacyReviewWatermark):
+                if watermark.review_id is None:
+                    unseen.append(review)
+                    continue
+                if legacy_boundary_date is not None and created_date < legacy_boundary_date:
+                    return newest_watermark(), unseen, True
+                if review["id"] == watermark.review_id:
+                    legacy_boundary_date = created_date
+                    continue
+                unseen.append(review)
+                continue
+
+            if watermark.created_date is None:
+                unseen.append(review)
+                continue
+            if created_date > watermark.created_date:
+                unseen.append(review)
+                continue
+            if created_date == watermark.created_date:
+                watermark_found = True
+                if review["id"] not in watermark.review_ids:
+                    unseen.append(review)
+                continue
+            return newest_watermark(), unseen, watermark_found
         url = response.get("links", {}).get("next")
 
-    return newest_id, unseen, watermark is None
+    if isinstance(watermark, LegacyReviewWatermark) and watermark.review_id is not None:
+        watermark_found = legacy_boundary_date is not None
+    return newest_watermark(), unseen, watermark_found
 
 
 def read_state(path):
@@ -125,17 +190,45 @@ def read_state(path):
     if not path.exists():
         return None
     state = json.loads(path.read_text())
-    if state.get("schema_version") != 1 or "last_seen_review_id" not in state or "app_id" not in state:
+    if state.get("schema_version") == 1 and "last_seen_review_id" in state and "app_id" in state:
+        review_id = state["last_seen_review_id"]
+        if review_id is None or (isinstance(review_id, str) and review_id):
+            return state
+    if (
+        state.get("schema_version") != 2
+        or "app_id" not in state
+        or "last_seen_review_created_date" not in state
+        or "last_seen_review_ids" not in state
+        or (
+            state["last_seen_review_created_date"] is not None
+            and (not isinstance(state["last_seen_review_created_date"], str) or not state["last_seen_review_created_date"])
+        )
+        or not isinstance(state["last_seen_review_ids"], list)
+        or not all(isinstance(review_id, str) and review_id for review_id in state["last_seen_review_ids"])
+        or len(state["last_seen_review_ids"]) != len(set(state["last_seen_review_ids"]))
+        or (state["last_seen_review_created_date"] is None and state["last_seen_review_ids"])
+    ):
         raise RuntimeError(f"invalid review state in {path}")
     return state
 
 
-def write_state(path, app_id, review_id):
-    """Atomically persist the latest review ID after a successful run."""
+def state_watermark(state):
+    """Return a v2 watermark or the legacy v1 boundary for migration."""
+    if state["schema_version"] == 1:
+        return LegacyReviewWatermark(state["last_seen_review_id"])
+    return ReviewWatermark(
+        state["last_seen_review_created_date"],
+        frozenset(state["last_seen_review_ids"]),
+    )
+
+
+def write_state(path, app_id, watermark):
+    """Atomically persist a complete timestamp-boundary watermark."""
     state = {
-        "schema_version": 1,
+        "schema_version": 2,
         "app_id": app_id,
-        "last_seen_review_id": review_id,
+        "last_seen_review_created_date": watermark.created_date,
+        "last_seen_review_ids": sorted(watermark.review_ids),
         "updated_at": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
     }
     temporary_path = path.with_suffix(".tmp")
@@ -219,11 +312,11 @@ def main():
     if state is not None and state["app_id"] != app_id:
         raise RuntimeError("review state belongs to a different App Store Connect app")
 
-    watermark = state["last_seen_review_id"] if state else None
-    newest_id, unseen, watermark_found = get_reviews(token, app_id, watermark)
+    watermark = state_watermark(state) if state else None
+    newest_watermark, unseen, watermark_found = get_reviews(token, app_id, watermark)
 
     if state is None:
-        write_state(args.state_file, app_id, newest_id)
+        write_state(args.state_file, app_id, newest_watermark)
         print("No review state found; saved the current watermark without posting historic reviews.")
         return
 
@@ -239,7 +332,7 @@ def main():
     for review in reversed(unseen):
         post_to_slack(webhook_url, review)
 
-    write_state(args.state_file, app_id, newest_id)
+    write_state(args.state_file, app_id, newest_watermark)
     print(f"Posted {len(unseen)} new App Store review(s) to Slack.")
 
 
