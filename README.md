@@ -10,7 +10,7 @@ It is designed for developers who want to own and extend their App Store automat
 
 - Looks up an app by bundle ID and polls App Store Connect for customer reviews.
 - Posts each new review to a Slack incoming webhook with rating, title, body, reviewer, storefront, and creation time.
-- Stores a single review-ID watermark in your private S3 bucket, so a scheduled run only posts newly seen reviews.
+- Stores a timestamp-boundary watermark in your private S3 bucket: every review ID at the newest observed creation time, so a scheduled run only posts newly seen reviews even when timestamps tie.
 - On its first run, creates the watermark but deliberately does not post historic reviews.
 - Retries transient App Store Connect and Slack failures with bounded backoff.
 - Uses GitHub Actions OIDC for AWS access—no long-lived AWS credentials are stored in GitHub.
@@ -48,7 +48,7 @@ The copied workflow runs daily at 08:00 America/Chicago. Adjust its schedule bef
 
 The included Terraform configuration is intentionally separate from the application files. Run it as a standalone root in your infrastructure repository, or integrate the resources with your existing Terraform configuration.
 
-It creates a private, versioned S3 bucket and an IAM role whose only data access is the review watermark at `app-store-reviews/state.json`.
+It creates a private, versioned S3 bucket and an IAM role whose only data access is the timestamp-boundary review watermark at `app-store-reviews/state.json`.
 
 ```sh
 cd terraform
@@ -97,7 +97,7 @@ In the application repository’s **Settings → Secrets and variables → Actio
 
 ### 3. Run the copied workflow once
 
-Open **Actions → App Store Reviews → Run workflow** in the application repository, on the branch named in `github_oidc_subject`. The first successful run saves the current review as its watermark and sends no Slack notifications. Later scheduled runs post only new reviews.
+Open **Actions → App Store Reviews → Run workflow** in the application repository, on the branch named in `github_oidc_subject`. The first successful run saves every ID at the newest review timestamp as its watermark and sends no Slack notifications. It stops once that timestamp group is complete rather than traversing the app's full review history. Later scheduled runs post only new reviews.
 
 ## Local development
 
