@@ -302,6 +302,28 @@ class AppStoreReviewsToSlackTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in unseen], ["new-review"])
         self.assertTrue(watermark_found)
 
+    def test_a_v1_watermark_migrates_when_it_is_the_oldest_review(self):
+        response = {
+            "data": [
+                review("new-review", createdDate="2026-08-25T12:00:01Z"),
+                review("legacy-watermark", createdDate="2026-08-25T12:00:00Z"),
+            ]
+        }
+
+        with patch.object(reviews, "request_json", return_value=response):
+            newest_watermark, unseen, watermark_found = reviews.get_reviews(
+                "token",
+                "123",
+                reviews.LegacyReviewWatermark("legacy-watermark"),
+            )
+
+        self.assertEqual(
+            newest_watermark,
+            reviews.ReviewWatermark("2026-08-25T12:00:01Z", frozenset({"new-review"})),
+        )
+        self.assertEqual([item["id"] for item in unseen], ["new-review"])
+        self.assertTrue(watermark_found)
+
     def test_state_round_trip_includes_the_app_id_and_watermark(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "state.json"

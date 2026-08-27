@@ -200,7 +200,7 @@ def get_reviews(token, app_id, watermark):
         url = response.get("links", {}).get("next")
 
     if isinstance(watermark, LegacyReviewWatermark) and watermark.review_id is not None:
-        watermark_found = legacy_boundary_date is not None
+        watermark_found = legacy_boundary_at is not None
     return newest_watermark(), unseen, watermark_found
 
 
