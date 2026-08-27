@@ -169,6 +169,31 @@ class AppStoreReviewsToSlackTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in unseen], ["new-review"])
         self.assertTrue(watermark_found)
 
+    def test_get_reviews_compares_created_dates_by_instant_across_utc_offsets(self):
+        saved_timestamp = "2026-11-01T01:55:00-07:00"
+        newer_timestamp = "2026-11-01T01:05:00-08:00"
+        response = {
+            "data": [
+                review("new-review", createdDate=newer_timestamp),
+                review("watermark", createdDate=saved_timestamp),
+                review("older", createdDate="2026-11-01T00:50:00-08:00"),
+            ]
+        }
+
+        with patch.object(reviews, "request_json", return_value=response):
+            newest_watermark, unseen, watermark_found = reviews.get_reviews(
+                "token",
+                "123",
+                reviews.ReviewWatermark(saved_timestamp, frozenset({"watermark"})),
+            )
+
+        self.assertEqual(
+            newest_watermark,
+            reviews.ReviewWatermark(newer_timestamp, frozenset({"new-review"})),
+        )
+        self.assertEqual([item["id"] for item in unseen], ["new-review"])
+        self.assertTrue(watermark_found)
+
     def test_initial_bootstrap_stops_after_the_newest_timestamp_group(self):
         first_page = "https://example.test/first"
         second_page = "https://example.test/second"

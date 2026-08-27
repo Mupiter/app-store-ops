@@ -109,12 +109,24 @@ def get_app_id(token, bundle_id):
     return apps[0]["id"]
 
 
-def review_created_date(review):
-    """Return a review's required App Store Connect timestamp."""
-    created_date = review["attributes"]["createdDate"]
+def parse_created_date(created_date, source):
+    """Parse an App Store Connect date-time with its required UTC offset."""
     if not isinstance(created_date, str) or not created_date:
-        raise RuntimeError(f"review {review['id']} has an invalid createdDate")
-    return created_date
+        raise RuntimeError(f"{source} has an invalid createdDate")
+    try:
+        normalized_date = f"{created_date[:-1]}+00:00" if created_date.endswith("Z") else created_date
+        parsed = datetime.fromisoformat(normalized_date)
+    except ValueError as error:
+        raise RuntimeError(f"{source} has an invalid createdDate") from error
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise RuntimeError(f"{source} has an invalid createdDate")
+    return parsed
+
+
+def review_created_date(review):
+    """Return a review's serialized and offset-aware creation timestamp."""
+    created_date = review["attributes"]["createdDate"]
+    return created_date, parse_created_date(created_date, f"review {review['id']}")
 
 
 def get_reviews(token, app_id, watermark):
@@ -128,12 +140,18 @@ def get_reviews(token, app_id, watermark):
     )
     url = f"{API}/v1/apps/{app_id}/customerReviews?{query}"
     newest_created_date = None
+    newest_created_at = None
     newest_review_ids = set()
     unseen = []
     watermark_found = watermark is None or (
         isinstance(watermark, ReviewWatermark) and watermark.created_date is None
     ) or (isinstance(watermark, LegacyReviewWatermark) and watermark.review_id is None)
-    legacy_boundary_date = None
+    legacy_boundary_at = None
+    watermark_created_at = (
+        parse_created_date(watermark.created_date, "review watermark")
+        if isinstance(watermark, ReviewWatermark) and watermark.created_date is not None
+        else None
+    )
 
     def newest_watermark():
         return ReviewWatermark(newest_created_date, frozenset(newest_review_ids))
@@ -142,15 +160,16 @@ def get_reviews(token, app_id, watermark):
         response = request_json(url, token)
         reviews = response["data"]
         for review in reviews:
-            created_date = review_created_date(review)
+            created_date, created_at = review_created_date(review)
             if newest_created_date is None:
                 newest_created_date = created_date
-            if created_date == newest_created_date:
+                newest_created_at = created_at
+            if created_at == newest_created_at:
                 newest_review_ids.add(review["id"])
 
             if watermark is None:
                 # Bootstrap only needs the newest timestamp group, not the full history.
-                if created_date < newest_created_date:
+                if created_at < newest_created_at:
                     return newest_watermark(), [], True
                 continue
 
@@ -158,10 +177,10 @@ def get_reviews(token, app_id, watermark):
                 if watermark.review_id is None:
                     unseen.append(review)
                     continue
-                if legacy_boundary_date is not None and created_date < legacy_boundary_date:
+                if legacy_boundary_at is not None and created_at < legacy_boundary_at:
                     return newest_watermark(), unseen, True
                 if review["id"] == watermark.review_id:
-                    legacy_boundary_date = created_date
+                    legacy_boundary_at = created_at
                     continue
                 unseen.append(review)
                 continue
@@ -169,10 +188,10 @@ def get_reviews(token, app_id, watermark):
             if watermark.created_date is None:
                 unseen.append(review)
                 continue
-            if created_date > watermark.created_date:
+            if created_at > watermark_created_at:
                 unseen.append(review)
                 continue
-            if created_date == watermark.created_date:
+            if created_at == watermark_created_at:
                 watermark_found = True
                 if review["id"] not in watermark.review_ids:
                     unseen.append(review)
